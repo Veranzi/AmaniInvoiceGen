@@ -1,6 +1,12 @@
 (function () {
   'use strict';
 
+  // Invoices are synced to Google Sheets via a same-origin serverless
+  // endpoint (see api/save-invoice.js) so the real Sheets URL never lives
+  // in client-side code. Requires deployment on Vercel (or similar) with
+  // the SHEET_WEBHOOK_URL environment variable set — see README.md.
+  const SAVE_INVOICE_ENDPOINT = '/api/save-invoice';
+
   const form = document.getElementById('invoice-form');
   const invoiceSection = document.getElementById('invoice-section');
   const invoicePaper = document.getElementById('invoice-paper');
@@ -230,6 +236,79 @@
     }
   }
 
+  function buildInvoiceRecord() {
+    const paymentMethod = get('paymentMethod').value;
+    const paymentDetails = {};
+    if (paymentMethod === 'M-Pesa') {
+      paymentDetails.mpesaName = get('mpesaName').value;
+      paymentDetails.mpesaType = get('mpesaType').value;
+      paymentDetails.mpesaPhone = get('mpesaPhone').value;
+      paymentDetails.mpesaTill = get('mpesaTill').value;
+      paymentDetails.mpesaPaybill = get('mpesaPaybill').value;
+      paymentDetails.mpesaAccountNo = get('mpesaAccountNo').value;
+    } else if (paymentMethod === 'Bank Transfer') {
+      paymentDetails.bankName = get('bankName').value;
+      paymentDetails.bankCode = get('bankCode').value;
+      paymentDetails.branchName = get('branchName').value;
+      paymentDetails.branchCode = get('branchCode').value;
+      paymentDetails.accountName = get('accountName').value;
+      paymentDetails.accountNumber = get('accountNumber').value;
+      paymentDetails.swiftIban = get('swiftIban').value;
+    } else if (paymentMethod === 'Card') {
+      paymentDetails.cardInstructions = get('cardInstructions').value;
+    }
+
+    const lineItems = getLineRows().map(function (row) {
+      return {
+        details: row.querySelector('input[name="lineDetails"]').value,
+        qty: row.querySelector('input[name="lineQty"]').value,
+        rate: row.querySelector('input[name="lineRate"]').value,
+        amount: row.querySelector('input[name="lineAmount"]').value
+      };
+    });
+
+    return {
+      InvoiceNumber: get('invoiceNumber').value,
+      InvoiceDate: get('invoiceDate').value,
+      BusinessName: get('businessName').value,
+      Address: get('address').value,
+      AddressLine2: get('addressLine2').value,
+      PhoneEmail: get('phoneEmail').value,
+      GuestName: get('guestName').value,
+      GuestAddress1: get('guestAddress1').value,
+      GuestAddress2: get('guestAddress2').value,
+      GuestContact: get('guestContact').value,
+      ReservationNumber: get('reservationNumber').value,
+      CheckIn: get('checkIn').value,
+      CheckOut: get('checkOut').value,
+      Nights: get('nights').value,
+      Currency: get('currency').value,
+      Subtotal: get('subtotal').value,
+      TaxRate: get('taxRate').value,
+      TaxAmount: get('taxAmount').value,
+      TotalAmount: get('totalAmount').value,
+      AmountPaid: get('amountPaid').value,
+      BalanceDue: get('balanceDue').value,
+      PaymentTerms: get('paymentTerms').value,
+      NotesTerms: get('notesTerms').value,
+      PaymentMethod: paymentMethod,
+      PaymentDetailsJSON: JSON.stringify(paymentDetails),
+      LineItemsJSON: JSON.stringify(lineItems)
+    };
+  }
+
+  function saveInvoiceRecord() {
+    const record = buildInvoiceRecord();
+    if (!record.InvoiceNumber) return;
+    // Fire-and-forget: a sync failure should never block generating/printing
+    // the invoice. Same-origin request, so no CORS workaround needed here.
+    fetch(SAVE_INVOICE_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(record)
+    }).catch(function () {});
+  }
+
   // Clear all inputs inside a container
   function clearFields(container) {
     container.querySelectorAll('input, select').forEach(function (el) {
@@ -290,6 +369,7 @@
     updateTaxAmount();
     updateBalanceDue();
     fillInvoice();
+    saveInvoiceRecord();
     invoicePaper.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
@@ -300,6 +380,7 @@
     updateTaxAmount();
     updateBalanceDue();
     fillInvoice();
+    saveInvoiceRecord();
     window.print();
   });
 
