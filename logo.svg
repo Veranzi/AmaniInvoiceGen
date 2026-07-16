@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 300" role="img" aria-label="Amani House">
+  <defs>
+    <mask id="amani-crescent">
+      <rect width="320" height="300" fill="black"/>
+      <circle cx="140" cy="110" r="85" fill="white"/>
+      <circle cx="182" cy="90" r="73" fill="black"/>
+    </mask>
+  </defs>
+  <!-- Crescent moon -->
+  <rect width="320" height="300" fill="#1155bb" mask="url(#amani-crescent)"/>
+  <!-- Red star -->
+  <path d="M210,61 L218.23,83.67 L242.34,84.49 L223.32,99.33 L229.99,122.51 L210,109 L190.01,122.51 L196.68,99.33 L177.66,84.49 L201.77,83.67 Z" fill="#e11d2b"/>
+  <!-- Wordmark -->
+  <text x="160" y="258" text-anchor="middle" font-family="'DM Sans', 'Segoe UI', system-ui, sans-serif" font-size="52" font-weight="600" fill="#0d2f66" letter-spacing="1">Amani House</text>
+</svg>
